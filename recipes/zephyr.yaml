@@ -1,0 +1,31 @@
+inherit: [ninja, patch, python3-usr]
+
+depends:
+  - name: west
+    use: [tools]
+  - name: devel::cross-toolchain-aarch64-none-elf
+    use: [tools, environment]
+
+checkoutSCM:
+  scm: url
+  url: https://github.com/zephyrproject-rtos/zephyr/archive/refs/tags/v3.2.0.tar.gz
+  stripComponents: 1
+  digestSHA1: "0668dcc1f8173979e96f567dfa65204ad2b6acd4"
+
+checkoutDeterministic: True
+checkoutScript: |
+  patchApplySeries $<<zephyr/*.patch>>
+
+buildTools: [cmake, dtc, python3, target-toolchain, west]
+buildVars: [CROSS_COMPILE]
+buildScript: |
+  export ZEPHYR_TOOLCHAIN_VARIANT=cross-compile
+  export CROSS_COMPILE="${BOB_TOOL_PATHS[target-toolchain]}/$CROSS_COMPILE"
+  export ZEPHYR_BASE="$1"
+
+  cmake -B"$PWD/build" -GNinja -DUSER_CACHE_DIR=$PWD/cache \
+    -DBOARD=fvp_baser_aemv8r -S"$1/samples/synchronization"
+  ninjaParallel -C build
+
+packageScript: |
+  cp "$1/build/zephyr/zephyr.elf" .

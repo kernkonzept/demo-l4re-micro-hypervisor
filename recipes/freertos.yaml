@@ -1,0 +1,16 @@
+inherit: [make]
+
+checkoutSCM:
+  - scm: import
+    url: src/freertos-tvmm
+
+buildTools: [target-toolchain]
+buildVars: [CROSS_COMPILE]
+buildScript: |
+  mkdir -p guest1 guest2
+  makeParallel -C "$1" O=$PWD/guest1 LDFLAGS=-Ttext-segment=0x01000000
+  makeParallel -C "$1" O=$PWD/guest2 LDFLAGS=-Ttext-segment=0x02000000
+
+packageScript: |
+  cp "$1"/guest1/freertos.elf freertos-guest1.elf
+  cp "$1"/guest2/freertos.elf freertos-guest2.elf

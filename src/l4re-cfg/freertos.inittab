@@ -1,0 +1,11 @@
+start tvmm utcb:2
+  defvm vm1 0x10
+    ram  0x01000000 0x200000
+    load guest1.elf
+  end
+
+  defvm vm2 0x10
+    ram 0x02000000 0x100000
+    load guest2.elf
+  end
+end

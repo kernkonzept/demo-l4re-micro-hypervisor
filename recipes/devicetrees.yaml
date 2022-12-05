@@ -1,0 +1,14 @@
+checkoutSCM:
+  scm: import
+  url: src/dts
+
+buildTools: [dtc]
+buildScript: |
+  for i in "$1"/*.dts ; do
+    dst="${i##*/}"
+    dst="${dst%.dts}"
+    dtc $i > ${dst}.dtb
+  done
+
+packageScript: |
+  cp -a "$1"/* .

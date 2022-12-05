@@ -1,0 +1,242 @@
+inherit: [ "basement::rootrecipe", make ]
+
+depends:
+  - name: devel::dtc
+    use: [tools]
+    forward: True
+  - name: utils::cpio
+    use: [tools]
+    forward: True
+
+checkoutSCM:
+  - scm: git
+    url: https://github.com/kernkonzept/mk.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: mk
+
+  - scm: git
+    url: https://github.com/kernkonzept/bootstrap.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/bootstrap
+  - scm: git
+    url: https://github.com/kernkonzept/cons.git
+    commit: 71eea60240eca7a4a0956a4f8101914581fae2ed
+    dir: pkg/cons
+  - scm: git
+    url: https://github.com/kernkonzept/drivers-frst.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/drivers-frst
+  - scm: git
+    url: https://github.com/kernkonzept/io.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/io
+  - scm: git
+    url: https://github.com/kernkonzept/l4re-core.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/l4re-core
+  - scm: git
+    url: https://github.com/kernkonzept/l4virtio.git
+    commit: bc5f50bf3ab740308c5a7a855221a7582b0c1016
+    dir: pkg/l4virtio
+  - scm: git
+    url: https://github.com/kernkonzept/libfdt.git
+    commit: 8f40d0f928c1ae37f93216958d352020c9fba2ee
+    dir: pkg/libfdt
+  - scm: git
+    url: https://github.com/kernkonzept/tinit.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/tinit
+  - scm: git
+    url: https://github.com/kernkonzept/tvmm.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/tvmm
+  - scm: git
+    url: https://github.com/kernkonzept/uvmm.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+    dir: pkg/uvmm
+  - scm: git
+    url: https://github.com/kernkonzept/zlib.git
+    commit: 709ba69d327a89f3dce599774dc325f41271a36e
+    dir: pkg/zlib
+
+  - scm: import
+    url: src/l4re-cfg
+    dir: cfg
+
+checkoutDeterministic: True
+checkoutScript: |
+  rm -f mk/pkg/*
+  for i in pkg/* ; do
+    ln -sfT ../../$i mk/$i
+  done
+
+buildSetup: |
+  export L4DIR=$1/mk
+
+buildTools: [dtc, host-toolchain, target-toolchain, flex, bison]
+buildVars: [CROSS_COMPILE, L4RE_DEFCONFIG, L4RE_TARGETS, L4RE_ENTRY]
+buildScript: |
+  MODULE_SEARCH_PATH="$1/cfg"
+  for i in "${@:2}" ; do
+    MODULE_SEARCH_PATH+=":$i"
+  done
+
+  if [[ ! -e build/.bob-init-done ]] ; then
+    rm -rf build
+    printf "$L4RE_DEFCONFIG" > defconfig
+    make -C "$1/mk" B="$PWD/build" DROPSCONF_DEFCONFIG="$PWD/defconfig"
+    make -C build olddefconfig
+    touch build/.bob-init-done
+  fi
+
+  pushd build
+  mkdir -p conf
+  cp -u "$1/cfg/Makeconf.local" conf/Makeconf.local
+  makeParallel ${L4RE_TARGETS:-}
+  makeParallel elfimage \
+    E=$L4RE_ENTRY \
+    MODULES_LIST="$1/cfg/modules.list" \
+    MODULE_SEARCH_PATH="$MODULE_SEARCH_PATH"
+  popd
+
+packageScript: |
+  cp -L "$1/build/images/bootstrap.elf" .
+
+multiPackage:
+  cortex-r52:
+    depends:
+      - name: devel::kk-toolchain-9.2.0-x86_64-arm-none-elf-eabi
+        use: [environment, tools]
+        forward: True
+      - name: kernel::fiasco
+        environment:
+          FIASCO_DEFCONFIG: |
+            CONFIG_ARM=y
+            CONFIG_PF_FVP_BASE_R=y
+            CONFIG_CPU_VIRT=y
+            CONFIG_ARM_SYNC_CLOCK=y
+            CONFIG_CONTEXT_SIZE_2K=y
+            CONFIG_PHYS_OBJ_SPACE_AVL=y
+            CONFIG_DISABLE_MAPDB=y
+            CONFIG_DISABLE_SLAB=y
+            CONFIG_WARN_ANY=y
+            CONFIG_OPTIMIZE_FOR_SIZE=y
+            CONFIG_THUMB2=y
+            CONFIG_EXPERIMENTAL=y
+      - freertos
+
+    privateEnvironment:
+      L4RE_ENTRY: "aarch32"
+      L4RE_TARGETS: "pkg/tinit pkg/tvmm pkg/drivers-frst"
+      L4RE_DEFCONFIG: |
+        CONFIG_BUILD_ARCH_arm=y
+        CONFIG_CPU_ARM_ARMV8R_AARCH32=y
+        CONFIG_PLATFORM_TYPE_arm_fvp_base_r=y
+        CONFIG_BID_OPTIMIZE_SIZE=y
+        # CONFIG_BID_BUILD_TESTS is not set
+        # CONFIG_BID_GCC_OMIT_FP is not set
+        CONFIG_EXPERIMENTAL=y
+        CONFIG_BID_PIE_ALL=y
+        CONFIG_BID_THUMB=y
+        CONFIG_TINIT_VERBOSITY_ALL=y
+        CONFIG_TINIT_RUN_SIGMA0=y
+        CONFIG_TINIT_HEAP_SIZE=1024
+        CONFIG_TINIT_DYNAMIC_LOADER=y
+        CONFIG_TVMM_VERBOSITY_ALL=y
+        CONFIG_TVMM_GIC_VIRTUAL_SPIS=64
+        CONFIG_TVMM_MAX_VMS=2
+        # CONFIG_UVMM_VDEV_DEVICE_PCI_HOST_ECAM_GENERIC is not set
+        # CONFIG_UVMM_PM is not set
+
+    packageScript: |
+      cat >run.sh <<'EOF'
+      D="${0%/*}"
+      FVP_BaseR_AEMv8R \
+        -C bp.exclusive_monitor.monitor_access_level=1 \
+        -C bp.pl011_uart0.out_file=- \
+        -C bp.refcounter.non_arch_start_at_default=1 \
+        -C bp.vis.disable_visualisation=1 \
+        -C cache_state_modelled=0 \
+        -C cluster0.NUM_CORES=1 \
+        -C cluster0.VMSA_supported=0 \
+        -C cluster0.has_aarch64=0 \
+        -C gic_distributor.GICD_CTLR-DS-1-means-secure-only=1 \
+        -C gic_distributor.has-two-security-states=0 \
+        -a 'cluster0*'="$D/bootstrap.elf" "$@"
+      EOF
+      chmod a+x run.sh
+
+  cortex-r82:
+    depends:
+      # Zephyr selects its own toolchain
+      - zephyr
+
+      # L4Re and Linux compile with a GNU/Linux toolchain
+      - name: devel::cross-toolchain-aarch64-linux-gnu
+        use: [environment, tools]
+        forward: True
+      - name: kernel::fiasco
+        environment:
+          FIASCO_DEFCONFIG: |
+            CONFIG_ARM=y
+            CONFIG_PF_FVP_BASE_R=y
+            CONFIG_ARM_CORTEX_R82=y
+            CONFIG_CPU_VIRT=y
+            CONFIG_ARM_SYNC_CLOCK=y
+            CONFIG_KMEM_SIZE=16384
+            CONFIG_MP=y
+            # CONFIG_NO_FRAME_PTR is not set
+            CONFIG_WARN_ANY=y
+            CONFIG_EXPERIMENTAL=y
+      - name: kernel::linux-image
+        environment:
+          LINUX_CUSTOM_CONFIG: r82-uvmm.defconfig
+      - devicetrees
+      - initramfs
+
+    privateEnvironment:
+      L4RE_ENTRY: "aarch64"
+      L4RE_DEFCONFIG: |
+        CONFIG_BUILD_ARCH_arm64=y
+        CONFIG_CPU_ARM_ARMV8R_AARCH64=y
+        CONFIG_KERNEL_CPU_VIRT=y
+        CONFIG_PLATFORM_TYPE_arm_fvp_base_r=y
+        # CONFIG_BID_BUILD_TESTS is not set
+        # CONFIG_BID_GCC_OMIT_FP is not set
+        CONFIG_BID_GENERATE_MAPFILE=y
+        CONFIG_EXPERIMENTAL=y
+        CONFIG_BID_PIE_ALL=y
+        # CONFIG_L4RE_STATIC_HEAP is not set
+        # CONFIG_L4RE_STATIC_STACK is not set
+        CONFIG_TVMM_GIC_VIRTUAL_SPIS=64
+        CONFIG_TVMM_MAX_VMS=1
+        # CONFIG_UVMM_VDEV_DEVICE_PCI_HOST_ECAM_GENERIC is not set
+        # CONFIG_UVMM_PM is not set
+
+    packageScript: |
+      cat >run.sh <<'EOF'
+      D="${0%/*}"
+      FVP_BaseR_AEMv8R \
+        -C bp.exclusive_monitor.monitor_access_level=1 \
+        -C bp.pl011_uart0.out_file=- \
+        -C bp.pl011_uart0.unbuffered_output=0 \
+        -C bp.refcounter.non_arch_start_at_default=1 \
+        -C bp.vis.disable_visualisation=1 \
+        -C cache_state_modelled=0 \
+        -C cci400.force_on_from_start=1 \
+        -C cluster0.NUM_CORES=4 \
+        -C cluster0.VMSA_supported=1 \
+        -C cluster0.has_aarch64=1 \
+        -C gic_distributor.GICD_CTLR-DS-1-means-secure-only=1 \
+        -C gic_distributor.has-two-security-states=0 \
+        -a 'cluster0*'="$D/bootstrap.elf" "$@"
+      EOF
+      chmod a+x run.sh

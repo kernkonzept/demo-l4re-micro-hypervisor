@@ -1,0 +1,36 @@
+## This file states the license of this package and possibly its subpackages
+## in machine and human readable format. The PackageName refers to the package
+## whose license is defined by PackageLicenseConcluded.
+## For more information about this file format visit the SPDX website at
+## https://spdx.org
+
+## Document Information
+SPDXVersion: SPDX-2.3
+DataLicense: CC0-1.0
+DocumentNamespace: spdx:kernkonzept/demo-l4re-micro-hypervisor-132902d8-21d1-4b32-97c8-65f4709404c6
+DocumentName: demo-l4re-micro-hypervisor
+SPDXID: SPDXRef-DOCUMENT
+
+## Creation Information
+Created: 2023-04-05T08:00:00Z
+Creator: Organization: Kernkonzept GmbH (info@kernkonzept.com)
+
+## Package Information
+PackageName: demo-l4re-micro-hypervisor
+SPDXID: SPDXRef-demo-l4re-micro-hypervisor
+PackageOriginator: Organization: Kernkonzept GmbH (info@kernkonzept.com)
+PackageLicenseDeclared: GPL-2.0-only
+PackageLicenseConcluded: GPL-2.0-only
+FilesAnalyzed: false
+PackageCopyrightText: NOASSERTION
+PackageDownloadLocation: NOASSERTION
+
+PackageName: freertos-tvmm
+SPDXID: SPDXRef-freertos-tvmm
+PackageFileName: ./src/freertos-tvmm
+PackageOriginator: NOASSERTION
+PackageLicenseDeclared: GPL-2.0 WITH freertos-exception-2.0
+PackageLicenseConcluded: GPL-2.0 WITH freertos-exception-2.0
+PackageCopyrightText: NOASSERTION
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false

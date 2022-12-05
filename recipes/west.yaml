@@ -1,0 +1,33 @@
+inherit: [ python3-pkg ]
+
+buildNetAccess: True
+buildScript: |
+    python3InstallPip \
+        anytree==2.8.0 \
+        canopen==2.1.0 \
+        colorama==0.4.6 \
+        docopt==0.6.2 \
+        future==0.18.3 \
+        intelhex==2.3.0 \
+        msgpack==1.0.5 \
+        packaging==23.0 \
+        progress==1.6 \
+        psutil==5.9.4 \
+        pyelftools==0.29 \
+        pykwalify==1.8.0 \
+        pylink-square==1.0.0 \
+        python-can==4.1.0 \
+        python-dateutil==2.8.2 \
+        PyYAML==6.0 \
+        ruamel.yaml==0.17.21 \
+        ruamel.yaml.clib==0.2.7 \
+        six==1.16.0 \
+        typing-extensions==4.5.0 \
+        west==1.0.0 \
+        wrapt==1.15.0
+
+packageScript: |
+    python3PackageTgt
+
+provideTools:
+    west: usr/bin

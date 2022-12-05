@@ -1,0 +1,7 @@
+checkoutSCM:
+  - scm: import
+    url: src/linux-cfg
+buildScript: |
+  cp -a "$1"/* .
+packageScript: |
+  cp -a "$1"/* .

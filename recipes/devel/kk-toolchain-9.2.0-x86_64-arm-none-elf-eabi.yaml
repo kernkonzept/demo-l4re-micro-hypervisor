@@ -1,0 +1,47 @@
+environment:
+  ARCH: arm64
+  AUTOCONF_TARGET: "arm-none-elf-eabi"
+
+checkoutSCM:
+  scm: url
+  url: https://l4re.org/download/nommu/gcc-arm-none-elf-eabi-9.2.0-1.tar.xz
+  digestSHA1: "e78a7d5738cecf53c37a01967ac920f5992ccaf6"
+  extract: False
+
+buildScript: |
+  ln -sf $1/gcc-arm-none-elf-eabi-9.2.0-1.tar.xz
+
+packageScript: |
+  tar xf $1/gcc-arm-none-elf-eabi-9.2.0-1.tar.xz --strip-components=1
+
+provideTools:
+  target-toolchain:
+    path: usr/bin
+    environment:
+      # usual compiler variables
+      AR: "${AUTOCONF_TARGET}-ar"
+      AS: "${AUTOCONF_TARGET}-as"
+      CC: "${AUTOCONF_TARGET}-gcc"
+      CPP: "${AUTOCONF_TARGET}-cpp"
+      CXX: "${AUTOCONF_TARGET}-g++"
+      GDB: "${AUTOCONF_TARGET}-gdb"
+      LD: "${AUTOCONF_TARGET}-ld"
+      NM: "${AUTOCONF_TARGET}-nm"
+      OBJCOPY: "${AUTOCONF_TARGET}-objcopy"
+      OBJDUMP: "${AUTOCONF_TARGET}-objdump"
+      RANLIB: "${AUTOCONF_TARGET}-ranlib"
+      STRIP: "${AUTOCONF_TARGET}-strip"
+
+      # Host system definition. Note that we do not touch the build
+      # system definiton (AUTOCONF_BUILD) because this is a cross
+      # compiling toolchain.
+      ARCH: "${ARCH}"
+      AUTOCONF_HOST: "${AUTOCONF_TARGET}"
+      CROSS_COMPILE: "${AUTOCONF_TARGET}-"
+
+      # compiler flags
+      CPPFLAGS:   "-Wdate-time"
+      CFLAGS:     "-Os -pipe"
+      CXXFLAGS:   "-Os -pipe"
+      LDFLAGS:    "-Wl,-O1 -Wl,--hash-style=gnu"
+

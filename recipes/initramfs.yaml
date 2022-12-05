@@ -1,0 +1,27 @@
+depends:
+    - libs::libc-tgt
+    - core::busybox
+
+checkoutSCM:
+  scm: import
+  url: src/initramfs
+
+buildTools: [target-toolchain]
+buildVars: [SYSROOT]
+buildScript: |
+    mkdir -p dev etc/init.d proc sys
+    for i do
+        cp -a $i/* .
+    done
+    ln -sf bin/busybox init
+
+packageTools: [cpio]
+packageScript: |
+    (
+        cd $1
+        # skip .debug directories with debug symbols
+        find . -type d -name .debug -prune -o -print | \
+          sort | \
+          cpio --create --reproducible --format=newc --owner=root:root | \
+          gzip
+    ) > initramfs.cpio.gz

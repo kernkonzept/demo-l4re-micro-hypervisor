@@ -1,0 +1,23 @@
+inherit: [make]
+
+checkoutSCM:
+  - scm: git
+    url: https://github.com/kernkonzept/fiasco.git
+    branch: nommu-1.0
+    tag: t2023-03-30-nommu
+
+buildTools: [host-toolchain, target-toolchain, flex, bison]
+buildVars: [CC, CXX, LD, CROSS_COMPILE, FIASCO_DEFCONFIG]
+buildScript: |
+  test -e build || make -C "$1" B=$PWD/build
+
+  pushd build
+  if [[ -n "${FIASCO_DEFCONFIG:+true}" && ! -e globalconfig.out ]] ; then
+    printf "$FIASCO_DEFCONFIG" > globalconfig.out
+    make olddefconfig
+  fi
+  makeParallel
+  popd
+
+packageScript: |
+  cp "$1/build/fiasco" .

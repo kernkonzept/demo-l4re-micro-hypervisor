@@ -1,0 +1,30 @@
+Adapt to uvmm
+
+Only use a single pl011 UART and move in memory to make sure we're not
+colliding with L4Re.
+
+diff --git a/boards/arm64/fvp_baser_aemv8r/fvp_baser_aemv8r.dts b/boards/arm64/fvp_baser_aemv8r/fvp_baser_aemv8r.dts
+index 0466adfda1..9a3a49c825 100644
+--- a/boards/arm64/fvp_baser_aemv8r/fvp_baser_aemv8r.dts
++++ b/boards/arm64/fvp_baser_aemv8r/fvp_baser_aemv8r.dts
+@@ -32,9 +32,9 @@
+ 			reg = <0x88000000 DT_SIZE_M(64)>;
+ 		};
+ 
+-		dram0: memory@0 {
++		dram0: memory@2000000 {
+ 			compatible = "mmio-dram";
+-			reg = <0x0 DT_SIZE_M(128)>;
++			reg = <0x02000000 DT_SIZE_M(2)>;
+ 		};
+ 	};
+ };
+@@ -43,8 +43,3 @@
+ 	status = "okay";
+ 	current-speed = <115200>;
+ };
+-
+-&uart1 {
+-	status = "okay";
+-	current-speed = <115200>;
+-};

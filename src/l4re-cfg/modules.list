@@ -1,0 +1,27 @@
+modaddr 0x0c000000
+
+default-kernel fiasco -serial_esc
+default-bootstrap bootstrap
+
+entry aarch32
+sigma0 tinit
+module tvmm
+module[fname=inittab] freertos.inittab
+module[fname=guest1.elf] freertos-guest1.elf
+module[fname=guest2.elf] freertos-guest2.elf
+
+entry aarch64
+sigma0 sigma0
+roottask moe --brk=c000000 rom/zephyr.ned
+module ned
+module l4re
+module zephyr.ned
+module zephyr.elf
+module virt-arm_r82-zephyr.dtb
+module uvmm
+module cons
+module io
+module io.lua
+module virt-arm_r82-linux.dtb
+module[uncompress,fname=vmlinux] boot/vmlinux-5.10.172
+module initramfs.cpio.gz

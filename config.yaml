@@ -1,0 +1,4 @@
+bobMinimumVersion: "0.22"
+layers:
+  - basement-gnu-linux
+  - basement
